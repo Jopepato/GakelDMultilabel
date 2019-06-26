@@ -153,15 +153,10 @@ class GreedyLabelSpaceClusterer(LabelSpaceClustererBase):
                 first_label = random.sample(free_labels, 1)
                 label_set = []
                 label_set.append(first_label[0])
-                print free_labels
                 for i in range(1, self.cluster_size):
                     pass_next = False
                     while not pass_next:
                         next_label = np.argmax(L[int(label_set[i-1]),:])
-                        print next_label
-                        print L
-                        print free_labels
-                        print label_set
                         L[int(label_set[i-1]),next_label] = 0.0
                         if next_label in free_labels and next_label not in label_set:
                             pass_next = True
