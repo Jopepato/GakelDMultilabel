@@ -148,7 +148,6 @@ class GreedyLabelSpaceClusterer(LabelSpaceClustererBase):
                     #Creates the label_subset and then continues
                 L = label_correlation(np.transpose(y))
                 L = np.transpose(L)
-                print L
                 #Get a random label
                 first_label = random.sample(free_labels, 1)
                 label_set = []
