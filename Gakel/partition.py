@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from skmultilearn.problem_transform import BinaryRelevance
-
+from .br import BinaryRelevance
+from .utils import get_matrix_in_format, matrix_creation_function_for_format
+from scipy.sparse import issparse
 from scipy import sparse
 
 
@@ -142,3 +143,106 @@ class LabelSpacePartitioningClassifier(BinaryRelevance):
         self._label_count = y.shape[1]
 
         return self
+
+    def _ensure_input_format(self, X, sparse_format='csr', enforce_sparse=False):
+        """Ensure the desired input format
+
+        This function ensures that input format follows the
+        density/sparsity requirements of base classifier. 
+
+        Parameters
+        ----------
+        X : array-like or sparse matrix
+            An input feature matrix of shape :code:`(n_samples, n_features)`
+        sparse_format: str
+            Requested format of returned scipy.sparse matrix, if sparse is returned
+        enforce_sparse : bool
+            Ignore require_dense and enforce sparsity, useful internally
+
+        Returns
+        -------
+        array-like or sparse matrix
+            Transformed X values of shape :code:`(n_samples, n_features)`
+            
+        .. note:: If :code:`require_dense` was set to :code:`True` for
+            input features in the constructor, the returned value is an
+            array-like of array-likes. If :code:`require_dense` is 
+            set to :code:`false`, a sparse matrix of format
+            :code:`sparse_format` is returned, if possible - without cloning.
+        """
+        is_sparse = issparse(X)
+
+        if is_sparse:
+            if self.require_dense[0] and not enforce_sparse:
+                return X.toarray()
+            else:
+                if sparse_format is None:
+                    return X
+                else:
+                    return get_matrix_in_format(X, sparse_format)
+        else:
+            if self.require_dense[0] and not enforce_sparse:
+                # TODO: perhaps a check_array?
+                return X
+            else:
+                return matrix_creation_function_for_format(sparse_format)(X)
+
+    def _ensure_output_format(self, matrix, sparse_format='csr', enforce_sparse=False):
+        """Ensure the desired output format
+
+        This function ensures that output format follows the
+        density/sparsity requirements of base classifier. 
+
+        Parameters
+        ----------
+
+        matrix : array-like matrix
+            An input feature matrix of shape :code:`(n_samples)` or
+            :code:`(n_samples, n_outputs)` or a sparse matrix of shape
+            :code:`(n_samples, n_outputs)`
+
+        sparse_format: str (default is csr)
+            Requested format of returned :code:`scipy.sparse` matrix,
+            if sparse is returned
+
+        enforce_sparse : bool (default is False)
+            Ignore :code:`require_dense` and enforce sparsity, useful
+            internally
+
+        Returns
+        -------
+        array-like or sparse matrix
+            Transformed X values of shape :code:`(n_samples, n_features)`
+            
+        .. note:: If :code:`require_dense` was set to :code:`True` for
+            input features in the constructor, the returned value is an
+            array-like of array-likes. If :code:`require_dense` is 
+            set to :code:`false`, a sparse matrix of format
+            :code:`sparse_format` is returned, if possible - without cloning.
+        """
+        is_sparse = issparse(matrix)
+
+        if is_sparse:
+            if self.require_dense[1] and not enforce_sparse:
+                if matrix.shape[1] != 1:
+                    return matrix.toarray()
+                elif matrix.shape[1] == 1:
+                    return np.ravel(matrix.toarray())
+            else:
+                if sparse_format is None:
+                    return matrix
+                else:
+                    return get_matrix_in_format(matrix, sparse_format)
+        else:
+            if self.require_dense[1] and not enforce_sparse:
+                # ensuring 1d
+                if len(matrix.shape) > 1:
+                    # a regular dense np.matrix or np.array of np.arrays
+                    return np.ravel(matrix)
+                else:
+                    return matrix
+            else:
+                # ensuring 2d
+                if len(matrix.shape) == 1:
+                    matrix = matrix.reshape((matrix.shape[0], 1))
+                return matrix_creation_function_for_format(sparse_format)(matrix)
